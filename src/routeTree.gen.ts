@@ -9,38 +9,241 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SelectRouteImport } from './routes/select'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppWeatherRouteImport } from './routes/_app.weather'
+import { Route as AppStrategyRouteImport } from './routes/_app.strategy'
+import { Route as AppSimulatorRouteImport } from './routes/_app.simulator'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppProbabilityRouteImport } from './routes/_app.probability'
+import { Route as AppMultiTeamRouteImport } from './routes/_app.multi-team'
+import { Route as AppLearningRouteImport } from './routes/_app.learning'
+import { Route as AppExplainRouteImport } from './routes/_app.explain'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppCompetitorsRouteImport } from './routes/_app.competitors'
+import { Route as AppAnomalyRouteImport } from './routes/_app.anomaly'
+import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 
+const SelectRoute = SelectRouteImport.update({
+  id: '/select',
+  path: '/select',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppWeatherRoute = AppWeatherRouteImport.update({
+  id: '/weather',
+  path: '/weather',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStrategyRoute = AppStrategyRouteImport.update({
+  id: '/strategy',
+  path: '/strategy',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSimulatorRoute = AppSimulatorRouteImport.update({
+  id: '/simulator',
+  path: '/simulator',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProbabilityRoute = AppProbabilityRouteImport.update({
+  id: '/probability',
+  path: '/probability',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMultiTeamRoute = AppMultiTeamRouteImport.update({
+  id: '/multi-team',
+  path: '/multi-team',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLearningRoute = AppLearningRouteImport.update({
+  id: '/learning',
+  path: '/learning',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppExplainRoute = AppExplainRouteImport.update({
+  id: '/explain',
+  path: '/explain',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCompetitorsRoute = AppCompetitorsRouteImport.update({
+  id: '/competitors',
+  path: '/competitors',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnomalyRoute = AppAnomalyRouteImport.update({
+  id: '/anomaly',
+  path: '/anomaly',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/select': typeof SelectRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/anomaly': typeof AppAnomalyRoute
+  '/competitors': typeof AppCompetitorsRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/explain': typeof AppExplainRoute
+  '/learning': typeof AppLearningRoute
+  '/multi-team': typeof AppMultiTeamRoute
+  '/probability': typeof AppProbabilityRoute
+  '/settings': typeof AppSettingsRoute
+  '/simulator': typeof AppSimulatorRoute
+  '/strategy': typeof AppStrategyRoute
+  '/weather': typeof AppWeatherRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/select': typeof SelectRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/anomaly': typeof AppAnomalyRoute
+  '/competitors': typeof AppCompetitorsRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/explain': typeof AppExplainRoute
+  '/learning': typeof AppLearningRoute
+  '/multi-team': typeof AppMultiTeamRoute
+  '/probability': typeof AppProbabilityRoute
+  '/settings': typeof AppSettingsRoute
+  '/simulator': typeof AppSimulatorRoute
+  '/strategy': typeof AppStrategyRoute
+  '/weather': typeof AppWeatherRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/select': typeof SelectRoute
+  '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/anomaly': typeof AppAnomalyRoute
+  '/_app/competitors': typeof AppCompetitorsRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/explain': typeof AppExplainRoute
+  '/_app/learning': typeof AppLearningRoute
+  '/_app/multi-team': typeof AppMultiTeamRoute
+  '/_app/probability': typeof AppProbabilityRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/simulator': typeof AppSimulatorRoute
+  '/_app/strategy': typeof AppStrategyRoute
+  '/_app/weather': typeof AppWeatherRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/select'
+    | '/analytics'
+    | '/anomaly'
+    | '/competitors'
+    | '/dashboard'
+    | '/explain'
+    | '/learning'
+    | '/multi-team'
+    | '/probability'
+    | '/settings'
+    | '/simulator'
+    | '/strategy'
+    | '/weather'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/select'
+    | '/analytics'
+    | '/anomaly'
+    | '/competitors'
+    | '/dashboard'
+    | '/explain'
+    | '/learning'
+    | '/multi-team'
+    | '/probability'
+    | '/settings'
+    | '/simulator'
+    | '/strategy'
+    | '/weather'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/auth'
+    | '/select'
+    | '/_app/analytics'
+    | '/_app/anomaly'
+    | '/_app/competitors'
+    | '/_app/dashboard'
+    | '/_app/explain'
+    | '/_app/learning'
+    | '/_app/multi-team'
+    | '/_app/probability'
+    | '/_app/settings'
+    | '/_app/simulator'
+    | '/_app/strategy'
+    | '/_app/weather'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  SelectRoute: typeof SelectRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/select': {
+      id: '/select'
+      path: '/select'
+      fullPath: '/select'
+      preLoaderRoute: typeof SelectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +251,131 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/weather': {
+      id: '/_app/weather'
+      path: '/weather'
+      fullPath: '/weather'
+      preLoaderRoute: typeof AppWeatherRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/strategy': {
+      id: '/_app/strategy'
+      path: '/strategy'
+      fullPath: '/strategy'
+      preLoaderRoute: typeof AppStrategyRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/simulator': {
+      id: '/_app/simulator'
+      path: '/simulator'
+      fullPath: '/simulator'
+      preLoaderRoute: typeof AppSimulatorRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/probability': {
+      id: '/_app/probability'
+      path: '/probability'
+      fullPath: '/probability'
+      preLoaderRoute: typeof AppProbabilityRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/multi-team': {
+      id: '/_app/multi-team'
+      path: '/multi-team'
+      fullPath: '/multi-team'
+      preLoaderRoute: typeof AppMultiTeamRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/learning': {
+      id: '/_app/learning'
+      path: '/learning'
+      fullPath: '/learning'
+      preLoaderRoute: typeof AppLearningRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/explain': {
+      id: '/_app/explain'
+      path: '/explain'
+      fullPath: '/explain'
+      preLoaderRoute: typeof AppExplainRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/competitors': {
+      id: '/_app/competitors'
+      path: '/competitors'
+      fullPath: '/competitors'
+      preLoaderRoute: typeof AppCompetitorsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/anomaly': {
+      id: '/_app/anomaly'
+      path: '/anomaly'
+      fullPath: '/anomaly'
+      preLoaderRoute: typeof AppAnomalyRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppAnomalyRoute: typeof AppAnomalyRoute
+  AppCompetitorsRoute: typeof AppCompetitorsRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppExplainRoute: typeof AppExplainRoute
+  AppLearningRoute: typeof AppLearningRoute
+  AppMultiTeamRoute: typeof AppMultiTeamRoute
+  AppProbabilityRoute: typeof AppProbabilityRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppSimulatorRoute: typeof AppSimulatorRoute
+  AppStrategyRoute: typeof AppStrategyRoute
+  AppWeatherRoute: typeof AppWeatherRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAnalyticsRoute: AppAnalyticsRoute,
+  AppAnomalyRoute: AppAnomalyRoute,
+  AppCompetitorsRoute: AppCompetitorsRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppExplainRoute: AppExplainRoute,
+  AppLearningRoute: AppLearningRoute,
+  AppMultiTeamRoute: AppMultiTeamRoute,
+  AppProbabilityRoute: AppProbabilityRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppSimulatorRoute: AppSimulatorRoute,
+  AppStrategyRoute: AppStrategyRoute,
+  AppWeatherRoute: AppWeatherRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRoute,
+  SelectRoute: SelectRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
