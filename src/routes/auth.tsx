@@ -20,10 +20,15 @@ function AuthGate() {
   const team = selectedTeam;
   const color = team?.color || "#0F1012";
 
-  if (typeof window !== "undefined" && !team) {
-    // Soft redirect
-    setTimeout(() => nav({ to: "/select" }), 0);
-  }
+  // Wait one tick for localStorage hydration before deciding to redirect.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setHydrated(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (hydrated && !team) nav({ to: "/select" });
+  }, [hydrated, team, nav]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
