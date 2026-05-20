@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useGlobal } from "@/context/GlobalContext";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Lock } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
@@ -20,15 +20,10 @@ function AuthGate() {
   const team = selectedTeam;
   const color = team?.color || "#0F1012";
 
-  // Wait one tick for localStorage hydration before deciding to redirect.
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setHydrated(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-  useEffect(() => {
-    if (hydrated && !team) nav({ to: "/select" });
-  }, [hydrated, team, nav]);
+  if (typeof window !== "undefined" && !team) {
+    // Soft redirect
+    setTimeout(() => nav({ to: "/select" }), 0);
+  }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -50,34 +50,13 @@
   .font-inter { font-family: "Inter", system-ui, sans-serif; }
 
   .glass {
-    --focus: 0;
-    --mx: 50%;
-    --my: 50%;
-    /* Fog/opacity eases away with proximity; hovered card becomes crystal clear */
-    background:
-      radial-gradient(
-        260px circle at var(--mx) var(--my),
-        rgba(255, 255, 255, calc(0.04 * (1 - var(--focus)))) 0%,
-        rgba(253, 253, 253, calc(0.55 + 0.35 * (1 - var(--focus)))) 70%
-      ),
-      rgba(253, 253, 253, calc(0.6 + 0.3 * (1 - var(--focus))));
-    backdrop-filter: blur(calc(40px - 30px * var(--focus))) saturate(calc(100% + 40% * var(--focus)));
-    -webkit-backdrop-filter: blur(calc(40px - 30px * var(--focus))) saturate(calc(100% + 40% * var(--focus)));
+    background: rgba(253, 253, 253, 0.85);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
     border: 1px solid var(--border-dim);
     border-radius: 28px;
-    box-shadow:
-      var(--shadow-glass),
-      0 calc(8px + 16px * var(--focus)) calc(24px + 36px * var(--focus))
-        rgba(15, 16, 18, calc(0.04 + 0.10 * var(--focus))),
-      0 0 calc(60px * var(--focus)) rgba(0, 113, 227, calc(0.10 * var(--focus)));
-    filter: brightness(calc(1 + 0.04 * var(--focus))) contrast(calc(1 + 0.05 * var(--focus)));
+    box-shadow: var(--shadow-glass);
     transform: translateZ(0);
-    transition:
-      background 0.45s var(--ease-out),
-      backdrop-filter 0.45s var(--ease-out),
-      -webkit-backdrop-filter 0.45s var(--ease-out),
-      box-shadow 0.45s var(--ease-out),
-      filter 0.45s var(--ease-out);
   }
   .glass-sm { border-radius: 16px; }
   .glass-md { border-radius: 20px; }
