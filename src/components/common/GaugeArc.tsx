@@ -1,5 +1,5 @@
 type Props = {
-  value: number;     // current
+  value: number;
   min?: number;
   max: number;
   size?: number;
@@ -8,30 +8,71 @@ type Props = {
   label?: string;
 };
 
-export default function GaugeArc({ value, min = 0, max, size = 180, color = "#0F1012", thickness = 10, label }: Props) {
+/**
+ * Top semicircle gauge. Fully contained inside its SVG viewBox.
+ * Arc sweeps from left (180°) up over the top to right (0°).
+ */
+export default function GaugeArc({
+  value,
+  min = 0,
+  max,
+  size = 160,
+  color = "#0F1012",
+  thickness = 10,
+  label,
+}: Props) {
   const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const r = (size - thickness) / 2;
-  const c = size / 2;
-  // Semicircle from 180° to 360° (bottom-aligned arc)
-  const startAngle = Math.PI;
-  const endAngle = startAngle + Math.PI * pct;
-  const x1 = c + r * Math.cos(startAngle);
-  const y1 = c + r * Math.sin(startAngle);
-  const x2 = c + r * Math.cos(endAngle);
-  const y2 = c + r * Math.sin(endAngle);
-  const largeArc = pct > 0.5 ? 1 : 0;
-  const bgEndX = c + r * Math.cos(Math.PI * 2);
-  const bgEndY = c + r * Math.sin(Math.PI * 2);
+  const pad = thickness / 2 + 2;
+  const r = (size - thickness) / 2 - 2;
+  const cx = size / 2;
+  const cy = pad + r; // arc center; top of arc sits at y = pad
+  const height = r + pad * 2;
+
+  // Angle 0 = right (3 o'clock), π = left (9 o'clock). Arc goes over the top.
+  const angleFor = (p: number) => Math.PI - Math.PI * p; // 0 → π (left), 1 → 0 (right)
+  const point = (a: number) => [cx + r * Math.cos(a), cy - r * Math.sin(a)] as const;
+
+  const [bx1, by1] = point(Math.PI); // left
+  const [bx2, by2] = point(0);       // right
+  const [vx2, vy2] = point(angleFor(pct));
 
   return (
-    <svg width={size} height={size / 2 + 8} viewBox={`0 0 ${size} ${size / 2 + 8}`} aria-hidden>
-      <path d={`M ${x1} ${y1} A ${r} ${r} 0 1 1 ${bgEndX} ${bgEndY}`} stroke="#F2F2F4" strokeWidth={thickness} fill="none" strokeLinecap="round" />
+    <svg
+      width="100%"
+      height={height}
+      viewBox={`0 0 ${size} ${height}`}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ display: "block", maxWidth: size, transformOrigin: "center" }}
+      aria-hidden
+    >
+      <path
+        d={`M ${bx1} ${by1} A ${r} ${r} 0 0 1 ${bx2} ${by2}`}
+        stroke="#F2F2F4"
+        strokeWidth={thickness}
+        fill="none"
+        strokeLinecap="round"
+      />
       {pct > 0 && (
-        <path d={`M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`} stroke={color} strokeWidth={thickness} fill="none" strokeLinecap="round"
-          style={{ transition: "all 0.5s cubic-bezier(0.2,1,0.3,1)" }} />
+        <path
+          d={`M ${bx1} ${by1} A ${r} ${r} 0 0 1 ${vx2} ${vy2}`}
+          stroke={color}
+          strokeWidth={thickness}
+          fill="none"
+          strokeLinecap="round"
+          style={{ transition: "all 0.5s cubic-bezier(0.2,1,0.3,1)" }}
+        />
       )}
       {label && (
-        <text x={c} y={size / 2 - 2} textAnchor="middle" fontSize={10} fill="#8F8F8F" fontFamily="Inter">{label}</text>
+        <text
+          x={cx}
+          y={cy - 4}
+          textAnchor="middle"
+          fontSize={10}
+          fill="#8F8F8F"
+          fontFamily="Inter"
+        >
+          {label}
+        </text>
       )}
     </svg>
   );
