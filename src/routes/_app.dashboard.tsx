@@ -9,11 +9,102 @@ export const Route = createFileRoute("/_app/dashboard")({
   component: Dashboard,
 });
 
-function Metric({ label, children }: { label: string; children: React.ReactNode }) {
+const CARD_MIN_HEIGHT = 240;
+
+function MetricCard({
+  label,
+  value,
+  unit,
+  gauge,
+  status,
+  statusColor = "#0F1012",
+  valueColor = "#0F1012",
+}: {
+  label: string;
+  value: React.ReactNode;
+  unit?: string;
+  gauge?: React.ReactNode;
+  status?: string;
+  statusColor?: string;
+  valueColor?: string;
+}) {
   return (
-    <div className="glass" style={{ padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 180 }}>
+    <div
+      className="glass"
+      style={{
+        padding: 24,
+        minHeight: CARD_MIN_HEIGHT,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        position: "relative",
+        overflow: "hidden",
+        boxSizing: "border-box",
+      }}
+    >
       <div className="eyebrow">{label}</div>
-      {children}
+
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          minHeight: 0,
+          marginTop: 12,
+        }}
+      >
+        {gauge && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
+              maxWidth: 200,
+              overflow: "hidden",
+            }}
+          >
+            {gauge}
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          marginTop: 16,
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: 44 }}>
+          <span
+            className="font-display"
+            style={{ fontSize: 36, fontWeight: 400, lineHeight: 1, color: valueColor }}
+          >
+            {value}
+          </span>
+          {unit && (
+            <span style={{ color: "#8F8F8F", fontSize: 13, lineHeight: 1 }}>{unit}</span>
+          )}
+        </div>
+        {status && (
+          <span
+            className="pill"
+            style={{
+              background: "#F2F2F4",
+              color: statusColor,
+              borderColor: "rgba(15,16,18,0.08)",
+            }}
+          >
+            {status}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -23,6 +114,9 @@ function Dashboard() {
   const t = telemetry;
   const compoundStyle = COMPOUND_COLORS[t.compound];
   const lapPct = (currentLap / TOTAL_LAPS) * 100;
+
+  const speedStatus = t.speed > 280 ? "TOP" : t.speed > 180 ? "FAST" : "STEADY";
+  const rpmStatus = t.rpm > 13000 ? "REDLINE" : t.rpm > 9000 ? "HIGH" : "CRUISE";
 
   return (
     <div style={{ padding: "32px 32px 80px" }}>
@@ -55,60 +149,99 @@ function Dashboard() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }} className="metrics-grid">
-        <Metric label={fanText("SPEED", fanMode)}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", marginTop: 8 }}>
-            <div className="font-display" style={{ fontSize: 48, fontWeight: 400 }}>{t.speed}</div>
-            <div style={{ color: "#8F8F8F", fontSize: 13 }}>km/h</div>
-          </div>
-          <GaugeArc value={t.speed} max={360} color="#0F1012" />
-        </Metric>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridAutoRows: "1fr",
+          gap: 16,
+        }}
+        className="metrics-grid"
+      >
+        <MetricCard
+          label={fanText("SPEED", fanMode)}
+          value={t.speed}
+          unit="km/h"
+          status={speedStatus}
+          gauge={<GaugeArc value={t.speed} max={360} color="#0F1012" size={180} thickness={10} />}
+        />
 
-        <Metric label={fanText("THROTTLE", fanMode)}>
-          <div className="font-display" style={{ fontSize: 36, color: "#00A651", marginTop: 8 }}>{t.throttle}%</div>
-          <div style={{ height: 6, background: "#F2F2F4", borderRadius: 3, marginTop: 16 }}>
-            <div style={{ width: `${t.throttle}%`, height: "100%", background: "#00A651", borderRadius: 3, transition: "width 0.5s var(--ease-out)" }} />
-          </div>
-        </Metric>
+        <MetricCard
+          label={fanText("THROTTLE", fanMode)}
+          value={`${t.throttle}`}
+          unit="%"
+          valueColor="#00A651"
+          status={t.throttle > 80 ? "FULL" : t.throttle > 30 ? "PART" : "LIFT"}
+          gauge={<GaugeArc value={t.throttle} max={100} color="#00A651" size={180} thickness={10} />}
+        />
 
-        <Metric label={fanText("BRAKE", fanMode)}>
-          <div className="font-display" style={{ fontSize: 36, color: "#E3001E", marginTop: 8 }}>{t.brake}%</div>
-          <div style={{ height: 6, background: "#F2F2F4", borderRadius: 3, marginTop: 16 }}>
-            <div style={{ width: `${t.brake}%`, height: "100%", background: "#E3001E", borderRadius: 3, transition: "width 0.5s var(--ease-out)" }} />
-          </div>
-        </Metric>
+        <MetricCard
+          label={fanText("BRAKE", fanMode)}
+          value={`${t.brake}`}
+          unit="%"
+          valueColor="#E3001E"
+          status={t.brake > 60 ? "HARD" : t.brake > 10 ? "TRAIL" : "OFF"}
+          gauge={<GaugeArc value={t.brake} max={100} color="#E3001E" size={180} thickness={10} />}
+        />
 
-        <Metric label="GEAR">
-          <div className="font-display" style={{ fontSize: 72, fontWeight: 400, textAlign: "center", marginTop: 8 }}>{t.gear}</div>
-        </Metric>
+        <MetricCard
+          label="GEAR"
+          value={t.gear}
+          status={t.gear >= 7 ? "TOP" : t.gear >= 4 ? "MID" : "LOW"}
+          gauge={
+            <div
+              className="font-display"
+              style={{
+                fontSize: 88,
+                lineHeight: 1,
+                fontWeight: 400,
+                textAlign: "center",
+                width: "100%",
+              }}
+            >
+              {t.gear}
+            </div>
+          }
+        />
 
-        <Metric label={fanText("RPM", fanMode)}>
-          <div className="font-display" style={{ fontSize: 36, color: "#0071E3", marginTop: 8 }}>{t.rpm.toLocaleString()}</div>
-          <svg width={120} height={120} viewBox="0 0 120 120" style={{ margin: "0 auto" }}>
-            <circle cx={60} cy={60} r={48} stroke="#F2F2F4" strokeWidth={8} fill="none" />
-            <circle cx={60} cy={60} r={48} stroke="#0071E3" strokeWidth={8} fill="none"
-              strokeDasharray={Math.PI * 96}
-              strokeDashoffset={Math.PI * 96 * (1 - t.rpm / 15500)}
-              strokeLinecap="round" transform="rotate(-90 60 60)"
-              style={{ transition: "stroke-dashoffset 0.5s var(--ease-out)" }} />
-          </svg>
-        </Metric>
+        <MetricCard
+          label={fanText("RPM", fanMode)}
+          value={t.rpm.toLocaleString()}
+          unit="rpm"
+          valueColor="#0071E3"
+          status={rpmStatus}
+          gauge={<GaugeArc value={t.rpm} max={15500} color="#0071E3" size={180} thickness={10} />}
+        />
 
-        <Metric label="COMPOUND">
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1, marginTop: 8 }}>
-            <span className="font-display" style={{
-              padding: "16px 32px", borderRadius: 40,
-              background: compoundStyle.bg, color: compoundStyle.fg,
-              fontSize: 20, letterSpacing: "0.1em",
-            }}>{t.compound}</span>
-          </div>
-        </Metric>
+        <MetricCard
+          label="COMPOUND"
+          value={t.compound}
+          status={`${currentLap}/${TOTAL_LAPS} LAPS`}
+          gauge={
+            <span
+              className="font-display"
+              style={{
+                padding: "16px 32px",
+                borderRadius: 40,
+                background: compoundStyle.bg,
+                color: compoundStyle.fg,
+                fontSize: 20,
+                letterSpacing: "0.1em",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {t.compound}
+            </span>
+          }
+        />
       </div>
 
       {/* Tire Wear */}
-      <div className="glass" style={{ padding: 24, marginTop: 16 }}>
+      <div className="glass" style={{ padding: 24, marginTop: 16, overflow: "hidden" }}>
         <div className="eyebrow">TIRE WEAR</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginTop: 16 }}>
           {(["FL", "FR", "RL", "RR"] as const).map((c) => {
             const v = t.tireWear[c];
             const color = v >= 85 ? "#E3001E" : v >= 70 ? "#E8700A" : v >= 40 ? "#F5A623" : "#00A651";
@@ -120,9 +253,9 @@ function Dashboard() {
                 animation: v > 85 ? "pulse-soft 2s ease-in-out infinite" : undefined,
               }}>
                 <div style={{ position: "absolute", left: 0, bottom: 0, right: 0, height: `${v}%`, background: color, opacity: 0.18, transition: "height 0.5s var(--ease-out)" }} />
-                <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 6 }}>
                   <div className="eyebrow">{c}</div>
-                  <div className="font-display" style={{ fontSize: 24, color }}>{v.toFixed(0)}%</div>
+                  <div className="font-display" style={{ fontSize: 24, color, lineHeight: 1 }}>{v.toFixed(0)}%</div>
                 </div>
               </div>
             );
@@ -131,7 +264,7 @@ function Dashboard() {
       </div>
 
       {/* Fuel */}
-      <div className="glass" style={{ padding: 24, marginTop: 16 }}>
+      <div className="glass" style={{ padding: 24, marginTop: 16, overflow: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 15, fontWeight: 400 }}>FUEL REMAINING</span>
           <span className="font-display" style={{ fontSize: 18 }}>{t.fuelKg.toFixed(1)} kg</span>
@@ -147,9 +280,9 @@ function Dashboard() {
 
       {/* Track Map */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }} className="dashboard-bottom">
-        <div className="glass" style={{ padding: 24 }}>
+        <div className="glass" style={{ padding: 24, overflow: "hidden" }}>
           <div className="eyebrow">TRACK MAP</div>
-          <svg width="100%" height={220} viewBox="0 0 400 220">
+          <svg width="100%" height={220} viewBox="0 0 400 220" preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
             <path id="trackPath"
               d="M 40 110 Q 60 40, 140 50 T 260 60 Q 340 70, 350 130 Q 360 190, 280 180 Q 200 170, 140 180 Q 60 190, 40 110 Z"
               stroke="#0F1012" strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity={0.85} />
@@ -162,14 +295,14 @@ function Dashboard() {
           <div style={{ textAlign: "center", fontSize: 11, color: "#8F8F8F", letterSpacing: "0.1em", marginTop: 8 }}>MONACO</div>
         </div>
 
-        <div className="glass" style={{ padding: 24 }}>
+        <div className="glass" style={{ padding: 24, overflow: "hidden" }}>
           <div className="eyebrow">TEAM RADIO</div>
           {radioMessages[0] && (
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginTop: 16, gap: 12 }}>
-              <div style={{ borderLeft: "2px solid #E3001E", paddingLeft: 16, fontSize: 17, lineHeight: 1.5, flex: 1 }}>
+              <div style={{ borderLeft: "2px solid #E3001E", paddingLeft: 16, fontSize: 17, lineHeight: 1.5, flex: 1, minWidth: 0 }}>
                 {fanText(radioMessages[0].msg, fanMode)}
               </div>
-              <div style={{ fontSize: 12, color: "#8F8F8F" }}>
+              <div style={{ fontSize: 12, color: "#8F8F8F", flexShrink: 0 }}>
                 {new Date(radioMessages[0].timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
@@ -183,7 +316,10 @@ function Dashboard() {
       </div>
 
       <style>{`
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
+          .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        }
+        @media (max-width: 640px) {
           .metrics-grid, .dashboard-bottom { grid-template-columns: 1fr !important; }
         }
       `}</style>
