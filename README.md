@@ -23,6 +23,10 @@ The platform analyzes:
 
 and gives real-time AI recommendations with clear explanations.
 
+⚠️ Note
+This project uses free-tier APIs, so requests are limited. With multiple endpoints, the API quota may get exhausted quickly, causing some features to stop working temporarily.
+
+
 ---
 
 ## Core Features
