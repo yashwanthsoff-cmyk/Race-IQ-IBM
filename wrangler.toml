@@ -1,0 +1,9 @@
+name = "tanstack-start-app"
+main = "dist/_worker.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+VITE_API_BASE_URL = "https://xff7vmjz3h.execute-api.eu-north-1.amazonaws.com"
+VITE_SUPABASE_URL = "https://ckzggwokpwzgthybzumj.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNremdnd29rcHd6Z3RoeWJ6dW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3ODA2NDEsImV4cCI6MjA5NTM1NjY0MX0.S850kdt-6dwS5LR8fdlHlqRLI16eDvnQrGdZNehrUf0"

@@ -88,7 +88,7 @@ RaceIQ shows how real-time AI and explainable intelligence can help engineers ma
 
 ## Live Demo
 
-URL: https://tanstack-start-app.raceibm-iq.workers.dev
+URL:https://tanstack-start-app.raceibm-iq.workers.dev
 
 Access Code:
 
