@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TEAMS } from "@/utils/constants";
 import { useEffect, useState } from "react";
-import { callGemini } from "@/services/GeminiAPI";
+import { callMultiteam } from "@/services/LambdaAPI";
 import { useGlobal } from "@/context/GlobalContext";
 import { fanText, FAN_HEADERS } from "@/utils/fanText";
 import { Check } from "lucide-react";
@@ -30,10 +30,10 @@ function MultiTeamPage() {
     (async () => {
       setLoading(true);
       try {
-        const data = await callGemini({
-          systemPrompt: "F1 strategy analyst. Return ONLY valid JSON: {winner:string, verdict:string, rankings:[{team,score,reason}]}",
-          userMessage: `Compare strategy efficiency of: ${teams.map((t) => t.name).join(", ")}.`,
-          expectJSON: true,
+        const data = await callMultiteam({
+          teams: teams.map((t) => t.name),
+          lap: 28,
+          condition: "DRY",
         });
         if (!cancelled) setVerdict(data);
       } catch (e) { /* silent */ }
@@ -56,7 +56,11 @@ function MultiTeamPage() {
               padding: 12, textAlign: "left", position: "relative", cursor: "pointer", fontSize: 13,
               boxShadow: sel ? `0 0 0 1.5px ${t.color}, inset 0 1px 0 rgba(255,255,255,0.6)` : undefined,
             }}>
-              {sel && <span style={{ position: "absolute", top: 6, right: 6, width: 16, height: 16, borderRadius: "50%", background: t.color, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Check size={10} color="#FDFDFD" /></span>}
+              {sel && (
+                <span style={{ position: "absolute", top: 6, right: 6, width: 16, height: 16, borderRadius: "50%", background: t.color, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                  <Check size={10} color="#FDFDFD" />
+                </span>
+              )}
               <div style={{ color: t.color, fontWeight: 400 }}>{t.name}</div>
             </button>
           );
@@ -90,16 +94,26 @@ function MultiTeamPage() {
         {loading && <div className="shimmer" style={{ height: 60, marginTop: 12 }} />}
         {verdict && (
           <>
-            <div style={{ fontSize: 17, marginTop: 12 }}>🏆 <strong style={{ color: TEAMS.find((t) => verdict.winner?.includes(t.name))?.color }}>{verdict.winner}</strong></div>
-            <p style={{ fontSize: 15, marginTop: 8, color: "#0F1012" }}>{verdict.verdict}</p>
+            <div style={{ fontSize: 17, marginTop: 12 }}>
+              🏆 <strong style={{ color: TEAMS.find((t) => verdict.winner?.includes(t.name))?.color }}>
+                {verdict.winner || verdict.best_team}
+              </strong>
+            </div>
+            <p style={{ fontSize: 15, marginTop: 8, color: "#0F1012" }}>
+              {verdict.verdict || verdict.analysis || verdict.plain_english}
+            </p>
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-              {(verdict.rankings || []).map((r: any, i: number) => (
-                <div key={i} style={{ fontSize: 13, color: "#8F8F8F" }}>{i + 1}. {r.team} — {r.reason}</div>
+              {(verdict.rankings || verdict.team_rankings || []).map((r: any, i: number) => (
+                <div key={i} style={{ fontSize: 13, color: "#8F8F8F" }}>
+                  {i + 1}. {r.team} — {r.reason}
+                </div>
               ))}
             </div>
           </>
         )}
-        {!loading && !verdict && <p style={{ fontSize: 14, color: "#8F8F8F", marginTop: 12 }}>Configure your Gemini API key to enable AI verdict.</p>}
+        {!loading && !verdict && (
+          <p style={{ fontSize: 14, color: "#8F8F8F", marginTop: 12 }}>Loading AI verdict...</p>
+        )}
       </div>
 
       <style>{`@media(max-width:768px){.mt-grid{grid-template-columns:repeat(2,1fr) !important;}.mt-results{grid-template-columns:1fr !important;}}`}</style>

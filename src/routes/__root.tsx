@@ -5,7 +5,7 @@ import {
 import appCss from "../styles.css?url";
 import { GlobalProvider } from "@/context/GlobalContext";
 import { Toaster } from "sonner";
-import CustomCursor from "@/components/common/CustomCursor";
+
 import DidYouKnow from "@/components/common/DidYouKnow";
 import VoiceButton from "@/components/voice/VoiceButton";
 
@@ -81,7 +81,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <GlobalProvider>
         <Outlet />
-        <CustomCursor />
+        
         <VoiceButton />
         <DidYouKnow />
         <Toaster position="top-right" toastOptions={{

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useGlobal } from "@/context/GlobalContext";
 import { useEffect, useRef, useState } from "react";
-import { callGemini, GEMINI_MODELS } from "@/services/GeminiAPI";
+import { callStrategy, callCopilot } from "@/services/LambdaAPI";
 import { toast } from "sonner";
 import { QUICK_PROMPTS, TOTAL_LAPS } from "@/utils/constants";
 import { fanText, FAN_HEADERS } from "@/utils/fanText";
@@ -20,7 +20,6 @@ function StrategyPage() {
     lap: currentLap, position: 3, tireAge: 12, gap: 2.3, rain: 15, compound: telemetry.compound,
   });
   const [showOverride, setShowOverride] = useState(false);
-  const [position] = useState(3);
   const tireAge = 12;
   const gap = 2.3;
   const gapBehind = 1.8;
@@ -30,12 +29,29 @@ function StrategyPage() {
   const getStrategy = async () => {
     setLoading(true); setStrategy(null);
     try {
-      const data = await callGemini({
-        systemPrompt: "You are an expert Formula 1 race strategist with 20 years experience. Return ONLY valid JSON. No markdown. No backticks. JSON schema: {decision:'PIT NOW'|'STAY OUT'|'PREPARE TO PIT', confidence:0-100, urgency:'CRITICAL'|'HIGH'|'MEDIUM'|'LOW', reasons:[3 strings], pitWindow:{earliest:number,latest:number}, riskLevel:'LOW'|'MEDIUM'|'HIGH'}" + (fanMode ? " Respond in fun, simple, enthusiastic language. No jargon." : ""),
-        userMessage: `Race data: Lap ${override.lap}/${TOTAL_LAPS}, P${override.position}, ${override.compound}, tire age ${override.tireAge} laps, gap ahead +${override.gap}s, gap behind -${gapBehind}s, rain ${override.rain}%, track ${trackTemp}°C, fuel ${telemetry.fuelKg.toFixed(1)}kg.`,
-        expectJSON: true, temperature: 0.5,
+      const data = await callStrategy({
+        lap: override.lap,
+        totalLaps: TOTAL_LAPS,
+        tireAge: override.tireAge,
+        tireName: override.compound,
+        position: override.position,
+        gapBehind: String(gapBehind),
+        rainChance: String(override.rain),
       });
-      setStrategy(data);
+      setStrategy({
+        decision: data.decision || data.recommendation || data.recommended_action || 'STAY OUT',
+        confidence: data.confidence_score || data.confidence || 75,
+        urgency: data.urgency || data.risk_level || 'MEDIUM',
+        reasons: data.reasons
+          ? (Array.isArray(data.reasons) ? data.reasons : [data.reasons])
+          : data.three_reasons || [data.reasoning || data.plain_english || 'Analyze telemetry'],
+        pitWindow: data.pit_window || data.pitWindow || {
+          earliest: data.pit_window_start || override.lap + 2,
+          latest: data.pit_window_end || override.lap + 5
+        },
+        riskLevel: data.risk_level || data.riskLevel || 'MEDIUM',
+        tireSuggestion: data.tire_suggestion || override.compound,
+      });
     } catch (e: any) { toast.error(e.message); }
     setLoading(false);
   };
@@ -53,7 +69,7 @@ function StrategyPage() {
     toast.success("Saved to decision history");
   };
 
-  const decisionColor = strategy?.decision === "PIT NOW" ? "#E3001E" : strategy?.decision === "STAY OUT" ? "#00A651" : "#F5A623";
+  const decisionColor = strategy?.decision?.includes("PIT") ? "#E3001E" : strategy?.decision?.includes("STAY") ? "#00A651" : "#F5A623";
   const urgencyColor = strategy?.urgency === "CRITICAL" || strategy?.urgency === "HIGH" ? "#E3001E" : strategy?.urgency === "MEDIUM" ? "#F5A623" : "#00A651";
 
   return (
@@ -61,11 +77,10 @@ function StrategyPage() {
       <div className="eyebrow">{fanMode ? FAN_HEADERS.strategy : "AI STRATEGY"}</div>
       <h1 style={{ fontSize: 36, fontWeight: 300, letterSpacing: "-0.025em", marginTop: 4 }}>Decision engine</h1>
 
-      {/* Situation chips */}
       <div className="glass" style={{ padding: 20, marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap" }}>
         {[
           { l: "LAP", v: `${currentLap}/${TOTAL_LAPS}` },
-          { l: "POSITION", v: `P${position}` },
+          { l: "POSITION", v: `P${override.position}` },
           { l: fanText("TIRE AGE", fanMode), v: `${tireAge} LAPS` },
           { l: fanText("GAP", fanMode), v: `+${gap.toFixed(1)}s` },
         ].map((c) => (
@@ -76,7 +91,6 @@ function StrategyPage() {
         ))}
       </div>
 
-      {/* Manual override */}
       <div style={{ marginTop: 16 }}>
         <button className="btn-ghost" style={{ padding: "10px 18px", fontSize: 13 }} onClick={() => setShowOverride(!showOverride)}>
           {showOverride ? "Hide" : "Show"} manual override
@@ -123,6 +137,11 @@ function StrategyPage() {
             }}>{strategy.decision}</span>
             <span className="pill" style={{ background: urgencyColor, color: "#FDFDFD", borderColor: "transparent" }}>{strategy.urgency}</span>
             <span className="pill">RISK · {strategy.riskLevel}</span>
+            {strategy.tireSuggestion && (
+              <span className="pill" style={{ background: "#0071E3", color: "#FDFDFD", borderColor: "transparent" }}>
+                → {strategy.tireSuggestion}
+              </span>
+            )}
             <span style={{ marginLeft: "auto", fontSize: 13, color: "#8F8F8F" }}>Confidence</span>
             <span className="font-display" style={{ fontSize: 18 }}>{strategy.confidence}%</span>
           </div>
@@ -149,7 +168,6 @@ function StrategyPage() {
         </div>
       )}
 
-      {/* Timeline */}
       {strategy?.pitWindow && (
         <div className="glass" style={{ padding: 24, marginTop: 16 }}>
           <div className="eyebrow">STRATEGY TIMELINE</div>
@@ -168,7 +186,6 @@ function StrategyPage() {
         </div>
       )}
 
-      {/* Copilot */}
       <Copilot />
     </div>
   );
@@ -180,6 +197,8 @@ function Copilot() {
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://xff7vmjz3h.execute-api.eu-north-1.amazonaws.com";
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [chatHistory, typing]);
@@ -188,17 +207,83 @@ function Copilot() {
     const msg = (text ?? input).trim();
     if (!msg || typing) return;
     addChat({ role: "user", content: msg, id: `u-${Date.now()}` });
-    setInput(""); setTyping(true);
+    setInput("");
+    setTyping(true);
     try {
-      const sys = `Expert F1 race engineer AI. Race data: Lap ${currentLap}/${TOTAL_LAPS}, P3, ${telemetry.compound} age 12 laps, gap +2.3s, fuel ${telemetry.fuelKg.toFixed(1)}kg, rain 15%. Answer concisely under 120 words.` + (fanMode ? " Simple non-technical language. Use emojis. DRS=Turbo Boost Zone, Undercut=Secret Pit Move, Stint=Tire Run, Delta=Time Gap." : "");
-      const reply = await callGemini({
-        model: GEMINI_MODELS.fast, systemPrompt: sys, userMessage: msg,
-        conversationHistory: chatHistory.slice(-10).map((m) => ({ role: m.role, content: m.content })),
-        maxTokens: 400,
+      const [telemetryData, strategyData, lapsData, rivalData] = await Promise.all([
+        fetch(`${API_BASE}/telemetry`).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/strategy`).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/laps`).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/rival`).then(r => r.json()).catch(() => ({})),
+      ]);
+
+      const context = `
+LIVE RACE TELEMETRY:
+- Speed: ${telemetryData.speed || 0} km/h
+- Throttle: ${telemetryData.throttle || 0}%
+- Brake: ${telemetryData.brake || 0}%
+- Gear: ${telemetryData.gear || 0}
+- Tire: ${telemetryData.tire_compound || telemetry.compound || "UNKNOWN"} aged ${telemetryData.stint_age || 0} laps
+
+LIVE STRATEGY:
+- Recommendation: ${strategyData.recommendation || strategyData.decision || "STAY"}
+- Confidence: ${strategyData.confidence || 0}%
+- Reasoning: ${strategyData.reasoning || strategyData.reasons?.[0] || "N/A"}
+- Pit Window: Laps ${strategyData.pit_window_start || strategyData.pitWindow?.earliest || "?"} - ${strategyData.pit_window_end || strategyData.pitWindow?.latest || "?"}
+- Urgency: ${strategyData.urgency || "LOW"}
+- Suggested Tire: ${strategyData.tire_suggestion || "UNKNOWN"}
+
+LAP DATA:
+- Current Lap: ${lapsData.lap_number || currentLap || "?"}
+- Lap Time: ${lapsData.lap_duration || "?"}s
+- Sector 1: ${lapsData.sector_1 || "?"}s
+- Sector 2: ${lapsData.sector_2 || "?"}s
+- Gap to Leader: ${lapsData.gap_to_leader || 0}s
+
+RIVAL PREDICTION (Driver #16):
+- Pit Window: Laps ${rivalData.pit_window_start_lap || "?"} - ${rivalData.pit_window_end_lap || "?"}
+- Strategy: ${rivalData.strategy || "Unknown"}
+- Confidence: ${rivalData.confidence || 0}%
+      `.trim();
+
+      const result = await callCopilot({
+        question: msg,
+        context,
+        lap: currentLap,
+        position: 3,
+        tireAge: 12,
+        tireName: telemetry.compound,
+        gapBehind: "1.8",
+        rainChance: "15",
+        driver: "Our Driver",
+        circuit: "Current Circuit",
       });
-      addChat({ role: "assistant", content: reply, id: `a-${Date.now()}` });
+
+      const reply = result.direct_answer
+        ? [
+            `🏎️ ${result.direct_answer}`,
+            result.tactical_reasoning ? `\n\n📋 Tactical Reasoning:\n${result.tactical_reasoning}` : "",
+            result.recommended_action ? `\n\n🎯 Recommended Action:\n${result.recommended_action}` : "",
+            result.risk_assessment?.level ? `\n\n⚠️ Risk: ${result.risk_assessment.level} — ${result.risk_assessment.main_risk || ""}` : "",
+            result.undercut_threat ? `\n\n🔄 Undercut Threat: ${result.undercut_threat}` : "",
+            result.radio_message ? `\n\n📻 Radio: "${result.radio_message}"` : "",
+            result.confidence ? `\n\n✅ Confidence: ${result.confidence}%` : "",
+          ].filter(Boolean).join("")
+        : result.answer || "Strategy analysis complete.";
+
+      addChat({
+        role: "assistant",
+        content: reply,
+        id: `a-${Date.now()}`,
+      });
+
     } catch (e: any) {
       toast.error(e.message);
+      addChat({
+        role: "assistant",
+        content: "⚠️ Connection error. Check your AWS backend.",
+        id: `a-${Date.now()}`,
+      });
     }
     setTyping(false);
   };
@@ -208,48 +293,94 @@ function Copilot() {
   return (
     <div style={{ marginTop: 40 }}>
       <div className="eyebrow">AI RACE COPILOT</div>
+      <div style={{
+        marginTop: 8, padding: "6px 14px", background: "rgba(0,166,81,0.1)",
+        border: "1px solid #00A651", borderRadius: 20, display: "inline-flex",
+        alignItems: "center", gap: 6, fontSize: 12, color: "#00A651"
+      }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00A651", display: "inline-block" }} />
+        LIVE TELEMETRY CONNECTED · GROQ llama-3.3-70b
+      </div>
       <div className="glass" style={{ marginTop: 12, padding: 0, overflow: "hidden" }}>
-        <div ref={scrollRef} style={{ height: 420, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div ref={scrollRef} style={{ height: 460, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
           {initial && (
-            <div style={{ background: "#F2F2F4", padding: 16, borderRadius: 20, borderTopLeftRadius: 4, fontSize: 15, color: "#8F8F8F", borderLeft: "2px solid #0071E3", alignSelf: "flex-start", maxWidth: "75%" }}>
-              Race Copilot online. I have full telemetry access. Ask me anything about strategy, tire management, rivals, or race pace.
+            <div style={{
+              background: "#F2F2F4", padding: 20, borderRadius: 20, borderTopLeftRadius: 4,
+              fontSize: 15, color: "#0F1012", borderLeft: "3px solid #0071E3",
+              alignSelf: "flex-start", maxWidth: "85%"
+            }}>
+              <div style={{ fontSize: 11, color: "#0071E3", fontWeight: 600, marginBottom: 8, letterSpacing: "0.06em" }}>
+                🤖 RACEIQ COPILOT — ONLINE
+              </div>
+              <div>Race Copilot online. I have full live telemetry access including speed, tire compound, lap times, gap to leader, and rival predictions.</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: "#8F8F8F" }}>
+                Ask me anything: pit strategy, tire management, rival threats, race pace, undercut windows.
+              </div>
             </div>
           )}
           {chatHistory.map((m) => (
             <div key={m.id} style={{
-              alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "75%",
+              alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+              maxWidth: "85%",
               background: m.role === "user" ? "#0F1012" : "#F2F2F4",
               color: m.role === "user" ? "#FDFDFD" : "#0F1012",
               borderRadius: m.role === "user" ? "20px 20px 4px 20px" : "20px 20px 20px 4px",
-              padding: "12px 16px", fontSize: 15, lineHeight: 1.5,
-              borderLeft: m.role === "assistant" ? "2px solid #0071E3" : undefined,
+              padding: "14px 18px", fontSize: 15, lineHeight: 1.6,
+              borderLeft: m.role === "assistant" ? "3px solid #0071E3" : undefined,
               whiteSpace: "pre-wrap",
-            }}>{fanText(m.content, fanMode)}</div>
+            }}>
+              {m.role === "assistant" && (
+                <div style={{ fontSize: 11, color: "#0071E3", fontWeight: 600, marginBottom: 8, letterSpacing: "0.06em" }}>
+                  🤖 RACEIQ COPILOT
+                </div>
+              )}
+              {fanText(m.content, fanMode)}
+            </div>
           ))}
           {typing && (
-            <div style={{ alignSelf: "flex-start", background: "#F2F2F4", padding: "12px 16px", borderRadius: "20px 20px 20px 4px", display: "flex", gap: 4 }}>
-              {[0, 1, 2].map((i) => (
-                <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "#8F8F8F", animation: `pulse-soft 1.2s ${i * 0.2}s infinite` }} />
-              ))}
+            <div style={{
+              alignSelf: "flex-start", background: "#F2F2F4",
+              padding: "14px 18px", borderRadius: "20px 20px 20px 4px",
+              borderLeft: "3px solid #0071E3", display: "flex", flexDirection: "column", gap: 8
+            }}>
+              <div style={{ fontSize: 11, color: "#0071E3", fontWeight: 600, letterSpacing: "0.06em" }}>
+                🤖 RACEIQ COPILOT — ANALYSING
+              </div>
+              <div style={{ display: "flex", gap: 4 }}>
+                {[0, 1, 2].map((i) => (
+                  <span key={i} style={{
+                    width: 6, height: 6, borderRadius: "50%", background: "#0071E3",
+                    animation: `pulse-soft 1.2s ${i * 0.2}s infinite`
+                  }} />
+                ))}
+              </div>
             </div>
           )}
         </div>
-
         <div style={{ borderTop: "1px solid rgba(15,16,18,0.08)", padding: 16 }}>
           <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 12 }} className="no-scrollbar">
             {QUICK_PROMPTS.map((p) => (
               <button key={p} onClick={() => send(p)} style={{
                 padding: "8px 14px", fontSize: 13, whiteSpace: "nowrap",
                 border: "1px solid rgba(15,16,18,0.08)", borderRadius: 40, background: "transparent",
+                cursor: "pointer",
               }}>{fanText(p, fanMode)}</button>
             ))}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <input className="input-base" placeholder="Ask your race engineer AI..." value={input}
+            <input
+              className="input-base"
+              placeholder="Ask your race engineer AI..."
+              value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()} />
-            <button className="btn-primary" onClick={() => send()} style={{ padding: "12px 18px" }}><Send size={14} /></button>
-            <button className="btn-ghost" onClick={clearChat} style={{ padding: "12px 14px" }}><Trash2 size={14} /></button>
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
+            />
+            <button className="btn-primary" onClick={() => send()} style={{ padding: "12px 18px" }}>
+              <Send size={14} />
+            </button>
+            <button className="btn-ghost" onClick={clearChat} style={{ padding: "12px 14px" }}>
+              <Trash2 size={14} />
+            </button>
           </div>
         </div>
       </div>

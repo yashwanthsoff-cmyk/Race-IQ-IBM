@@ -41,7 +41,7 @@
 
   /* Custom cursor */
   @media (hover: hover) and (pointer: fine) {
-    body, body * { cursor: none !important; }
+    body, body * { cursor: auto !important; }
   }
 }
 
