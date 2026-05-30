@@ -94,6 +94,9 @@ Access Code:
 
 ```bash
 PITLANE2024
+
+⚠️ Note
+This project uses free-tier APIs, so requests are limited. With multiple endpoints, the API quota may get exhausted quickly, causing some features to stop working temporarily.
 ```
 
 ---
