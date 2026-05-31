@@ -23,6 +23,7 @@ The platform analyzes:
 
 and gives real-time AI recommendations with clear explanations.
 
+Password for Authentication is PITLANE2024
 ⚠️ Note
 This project uses free-tier APIs, so requests are limited. With multiple endpoints, the API quota may get exhausted quickly, causing some features to stop working temporarily.
 
@@ -90,7 +91,7 @@ RaceIQ shows how real-time AI and explainable intelligence can help engineers ma
 
 URL:https://tanstack-start-app.raceibm-iq.workers.dev
 
-Access Code:
+Access Code:PITLANE2024
 
 ```bash
 PITLANE2024
